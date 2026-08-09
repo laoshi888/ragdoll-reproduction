@@ -1,0 +1,25 @@
+# Python
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.venv/
+
+# Environments and IDE files
+.env
+.vscode/
+
+# Large or generated experiment artifacts
+data/**
+!data/.gitkeep
+models/**
+!models/.gitkeep
+logs/**
+!logs/.gitkeep
+experiments/**
+!experiments/.gitkeep
+
+# Local caches
+.cache/
+wandb/
+outputs/
