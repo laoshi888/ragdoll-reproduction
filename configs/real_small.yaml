@@ -37,3 +37,5 @@ artifacts:
   data_cache: /root/autodl-tmp/ragdoll/data
   logs: /root/autodl-tmp/ragdoll/logs
   workload_questions: /root/autodl-tmp/ragdoll/data/workload_questions.jsonl
+  profiles: /root/autodl-tmp/ragdoll/experiments/profile_small.json
+  result: /root/autodl-tmp/ragdoll/experiments/pipelined_small.json
