@@ -14,14 +14,16 @@ models:
 
 corpus:
   dataset: trivia_qa
+  dataset_config: rc
   split: train
-  max_documents: 2000
+  streaming: true
+  max_chunks: 2000
   chunk_size_characters: 600
   chunk_overlap_characters: 80
   partitions: 8
 
 milvus:
-  uri: http://127.0.0.1:19530
+  uri: /root/autodl-tmp/ragdoll/data/ragdoll_small.db
   collection: ragdoll_small
 
 scheduler:
@@ -34,3 +36,4 @@ artifacts:
   model_cache: /root/autodl-tmp/ragdoll/models
   data_cache: /root/autodl-tmp/ragdoll/data
   logs: /root/autodl-tmp/ragdoll/logs
+  workload_questions: /root/autodl-tmp/ragdoll/data/workload_questions.jsonl

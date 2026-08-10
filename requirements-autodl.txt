@@ -1,0 +1,4 @@
+# Install only on AutoDL. vLLM is deliberately separate because it requires a
+# fresh PyTorch/CUDA-compatible environment.
+PyYAML>=6,<7
+pymilvus[milvus-lite]>=2.5,<3
