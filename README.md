@@ -18,3 +18,14 @@ This repository is a reproduction workspace for *RAGDoll: Efficient Offloading-b
 ## Status
 
 The base Python, PyTorch, CUDA, Transformers, Accelerate, Sentence Transformers, and Datasets environment has been validated on AutoDL. The next step is to identify the paper's public code and its smallest reproducible experiment.
+
+## External Components
+
+This reproduction reuses established open-source components where possible:
+
+- FlexLLMGen (the official FlexGen implementation): https://github.com/FMInference/FlexLLMGen
+- Milvus vector database: https://github.com/milvus-io/milvus
+- vLLM baseline serving engine: https://github.com/vllm-project/vllm
+- Hugging Face Transformers and Accelerate for model interfaces and device placement.
+
+The exact commits and package versions will be recorded in `configs/sources.yaml` after the first runnable baseline is selected.

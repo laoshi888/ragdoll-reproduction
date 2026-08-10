@@ -1,0 +1,13 @@
+# External projects used by the reproduction.
+# Pin exact commits after the first baseline has been validated.
+flexllmgen:
+  repository: https://github.com/FMInference/FlexLLMGen
+  role: offloading-based single-GPU LLM inference
+milvus:
+  repository: https://github.com/milvus-io/milvus
+  role: vector database for retrieval
+vllm:
+  repository: https://github.com/vllm-project/vllm
+  role: serial RAG serving baseline
+huggingface:
+  role: model loading, tokenization, and device placement

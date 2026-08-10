@@ -1,0 +1,36 @@
+# First real-backend experiment. Run only on the AutoDL Linux instance.
+# All artefact paths are deliberately outside Git-tracked source directories.
+run:
+  name: qwen15b_triviaqa_small
+  seed: 7
+  top_k: 3
+  max_new_tokens: 96
+  requests_per_phase: 24
+  arrival_rates_per_minute: [4, 8, 12, 16]
+
+models:
+  generator: Qwen/Qwen2.5-1.5B-Instruct
+  embedder: sentence-transformers/all-MiniLM-L6-v2
+
+corpus:
+  dataset: trivia_qa
+  split: train
+  max_documents: 2000
+  chunk_size_characters: 600
+  chunk_overlap_characters: 80
+  partitions: 8
+
+milvus:
+  uri: http://127.0.0.1:19530
+  collection: ragdoll_small
+
+scheduler:
+  retrieval_batch_candidates: [1, 2, 4, 8, 16]
+  generation_batch_candidates: [1, 2, 4, 8, 16]
+  static_batch_size: 1
+  profiling_samples_per_batch: 3
+
+artifacts:
+  model_cache: /root/autodl-tmp/ragdoll/models
+  data_cache: /root/autodl-tmp/ragdoll/data
+  logs: /root/autodl-tmp/ragdoll/logs
