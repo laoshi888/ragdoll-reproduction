@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 import sys
 import time
@@ -36,3 +37,9 @@ def main() -> None:
             started = time.monotonic(); generator.generate(retrieved); store.add(ProfileSample("generation", size, time.monotonic() - started))
         print(f"profiled batch_size={size}")
     store.save(Path(cfg["artifacts"]["profiles"]))
+
+
+if __name__ == "__main__":
+    main()
+    sys.stdout.flush()
+    os._exit(0)

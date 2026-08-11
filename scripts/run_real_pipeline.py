@@ -36,3 +36,9 @@ def main() -> None:
     output = {"request_count": len(result.responses), "mean_latency_seconds": sum(item.latency_seconds for item in result.timings) / len(result.timings), "retrieval_batches": result.retrieval_batch_sizes, "generation_batches": result.generation_batch_sizes}
     path = Path(cfg["artifacts"]["result"]); path.parent.mkdir(parents=True, exist_ok=True); path.write_text(json.dumps(output, indent=2) + "\n", encoding="utf-8")
     print(json.dumps(output, indent=2))
+
+
+if __name__ == "__main__":
+    main()
+    sys.stdout.flush()
+    os._exit(0)

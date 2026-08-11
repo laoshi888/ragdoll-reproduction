@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import argparse
+import os
 from pathlib import Path
+import sys
 
 import yaml
 from pymilvus import MilvusClient
@@ -24,3 +26,5 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+    sys.stdout.flush()
+    os._exit(0)
