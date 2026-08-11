@@ -16,6 +16,7 @@ from ragdoll.corpus import chunk_text, record_contexts  # noqa: E402
 def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=Path, default=PROJECT_ROOT / "configs" / "real_small.yaml")
+    parser.add_argument("--reset", action="store_true", help="drop only the configured collection before rebuilding")
     args = parser.parse_args()
     try:
         import yaml
@@ -29,7 +30,9 @@ def main() -> None:
     client = MilvusClient(config["milvus"]["uri"])
     collection = config["milvus"]["collection"]
     if client.has_collection(collection):
-        raise SystemExit(f"Collection {collection!r} already exists; refusing to overwrite it.")
+        if not args.reset:
+            raise SystemExit(f"Collection {collection!r} already exists; rerun with --reset to replace it.")
+        client.drop_collection(collection)
     model_cache = Path(artifacts["model_cache"])
     data_cache = Path(artifacts["data_cache"])
     model_cache.mkdir(parents=True, exist_ok=True)
