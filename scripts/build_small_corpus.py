@@ -35,7 +35,7 @@ def main() -> None:
     model_cache.mkdir(parents=True, exist_ok=True)
     data_cache.mkdir(parents=True, exist_ok=True)
     embedder = SentenceTransformer(config["models"]["embedder"], cache_folder=str(model_cache))
-    dimension = embedder.get_sentence_embedding_dimension()
+    dimension = embedder.get_embedding_dimension()
     client.create_collection(collection_name=collection, dimension=dimension, metric_type="COSINE", auto_id=False)
     dataset = load_dataset(
         corpus["dataset"],

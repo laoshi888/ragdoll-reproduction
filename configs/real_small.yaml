@@ -13,7 +13,7 @@ models:
   embedder: sentence-transformers/all-MiniLM-L6-v2
 
 corpus:
-  dataset: trivia_qa
+  dataset: mandarjoshi/trivia_qa
   dataset_config: rc
   split: train
   streaming: true
