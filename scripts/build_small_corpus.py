@@ -57,6 +57,8 @@ def main() -> None:
             questions.append({"question": question})
         for context in record_contexts(record):
             for piece in chunk_text(context, chunk_size=corpus["chunk_size_characters"], overlap=corpus["chunk_overlap_characters"]):
+                if len(texts) >= corpus["max_chunks"]:
+                    break
                 if piece not in seen:
                     seen.add(piece)
                     texts.append(piece)
@@ -73,6 +75,7 @@ def main() -> None:
     question_path = Path(artifacts["workload_questions"])
     question_path.parent.mkdir(parents=True, exist_ok=True)
     question_path.write_text("".join(json.dumps(item) + "\n" for item in questions), encoding="utf-8")
+    client.close()
     print(f"collection={collection} chunks={len(texts)} questions={len(questions)}")
 
 
