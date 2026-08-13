@@ -37,10 +37,13 @@ def main() -> None:
         **cfg["vllm"],
     )
     selector = ProfiledBatchSelector(tuple(cfg["scheduler"]["generation_batch_candidates"]), profiles, cfg["scheduler"]["static_batch_size"])
-    result = PipelinedRAGRunner(retriever=retriever, generator=generator, retrieval_selector=selector, generation_selector=selector).run(requests)
-    output = {"request_count": len(result.responses), "mean_latency_seconds": sum(item.latency_seconds for item in result.timings) / len(result.timings), "retrieval_batches": result.retrieval_batch_sizes, "generation_batches": result.generation_batch_sizes}
-    path = Path(cfg["artifacts"]["result"]); path.parent.mkdir(parents=True, exist_ok=True); path.write_text(json.dumps(output, indent=2) + "\n", encoding="utf-8")
-    print(json.dumps(output, indent=2))
+    try:
+        result = PipelinedRAGRunner(retriever=retriever, generator=generator, retrieval_selector=selector, generation_selector=selector).run(requests)
+        output = {"request_count": len(result.responses), "mean_latency_seconds": sum(item.latency_seconds for item in result.timings) / len(result.timings), "retrieval_batches": result.retrieval_batch_sizes, "generation_batches": result.generation_batch_sizes}
+        path = Path(cfg["artifacts"]["result"]); path.parent.mkdir(parents=True, exist_ok=True); path.write_text(json.dumps(output, indent=2) + "\n", encoding="utf-8")
+        print(json.dumps(output, indent=2))
+    finally:
+        generator.close()
 
 
 if __name__ == "__main__":

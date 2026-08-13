@@ -53,3 +53,7 @@ class VLLMGenerator:
             GeneratedResponse(request_id=item.request.request_id, text=output.outputs[0].text)
             for item, output in zip(requests, outputs, strict=True)
         )
+
+    def close(self) -> None:
+        """Stop the vLLM engine before the script uses its hard process exit."""
+        self._llm.llm_engine.shutdown()

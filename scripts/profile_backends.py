@@ -34,13 +34,16 @@ def main() -> None:
     store = ProfileStore()
     candidates = cfg["scheduler"]["generation_batch_candidates"]
     repeats = cfg["scheduler"]["profiling_samples_per_batch"]
-    for size in candidates:
-        batch = [RAGRequest(index, question, 0.0) for index, question in enumerate(questions[:size])]
-        for _ in range(repeats):
-            started = time.monotonic(); retrieved = retriever.retrieve(batch); store.add(ProfileSample("retrieval", size, time.monotonic() - started))
-            started = time.monotonic(); generator.generate(retrieved); store.add(ProfileSample("generation", size, time.monotonic() - started))
-        print(f"profiled batch_size={size}")
-    store.save(Path(cfg["artifacts"]["profiles"]))
+    try:
+        for size in candidates:
+            batch = [RAGRequest(index, question, 0.0) for index, question in enumerate(questions[:size])]
+            for _ in range(repeats):
+                started = time.monotonic(); retrieved = retriever.retrieve(batch); store.add(ProfileSample("retrieval", size, time.monotonic() - started))
+                started = time.monotonic(); generator.generate(retrieved); store.add(ProfileSample("generation", size, time.monotonic() - started))
+            print(f"profiled batch_size={size}")
+        store.save(Path(cfg["artifacts"]["profiles"]))
+    finally:
+        generator.close()
 
 
 if __name__ == "__main__":
