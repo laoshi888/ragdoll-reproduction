@@ -22,6 +22,10 @@ class MilvusRetriever:
             ) from error
         self._client = MilvusClient(uri=uri)
         self._collection = collection
+        # Milvus Lite can leave a persisted collection in the ``released``
+        # state after the process that built it exits.  Searching a released
+        # collection fails, so make the runtime ownership explicit here.
+        self._client.load_collection(collection_name=self._collection)
         self._embedder = SentenceTransformer(embedder_name)
         self._top_k = top_k
 
