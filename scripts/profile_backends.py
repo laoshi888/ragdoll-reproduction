@@ -26,7 +26,11 @@ def main() -> None:
     cfg = yaml.safe_load(args.config.read_text(encoding="utf-8"))
     questions = [json.loads(line)["question"] for line in Path(cfg["artifacts"]["workload_questions"]).read_text(encoding="utf-8").splitlines()]
     retriever = MilvusRetriever(uri=cfg["milvus"]["uri"], collection=cfg["milvus"]["collection"], embedder_name=cfg["models"]["embedder"], top_k=cfg["run"]["top_k"])
-    generator = VLLMGenerator(model=cfg["models"]["generator"], max_new_tokens=cfg["run"]["max_new_tokens"])
+    generator = VLLMGenerator(
+        model=cfg["models"]["generator"],
+        max_new_tokens=cfg["run"]["max_new_tokens"],
+        **cfg["vllm"],
+    )
     store = ProfileStore()
     candidates = cfg["scheduler"]["generation_batch_candidates"]
     repeats = cfg["scheduler"]["profiling_samples_per_batch"]

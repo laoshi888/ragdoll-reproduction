@@ -26,6 +26,8 @@ class VLLMGenerator:
         max_new_tokens: int,
         gpu_memory_utilization: float = 0.75,
         max_num_seqs: int = 16,
+        max_model_len: int = 2048,
+        enforce_eager: bool = True,
     ) -> None:
         if not 0 < gpu_memory_utilization <= 1:
             raise ValueError("gpu_memory_utilization must be in (0, 1]")
@@ -37,6 +39,11 @@ class VLLMGenerator:
             model=model,
             gpu_memory_utilization=gpu_memory_utilization,
             max_num_seqs=max_num_seqs,
+            max_model_len=max_model_len,
+            # This small reproduction does not benefit from CUDA graphs, and
+            # eager execution avoids their lengthy first-run capture on the
+            # shared AutoDL GPU.
+            enforce_eager=enforce_eager,
         )
         self._sampling_params = SamplingParams(temperature=0.0, max_tokens=max_new_tokens)
 

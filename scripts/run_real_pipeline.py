@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 from pathlib import Path
 import sys
 
@@ -30,7 +31,11 @@ def main() -> None:
     requests = tuple(RAGRequest(item.request_id, questions[item.request_id], item.arrival_time) for item in arrivals)
     profiles = ProfileStore.load(Path(cfg["artifacts"]["profiles"]))
     retriever = MilvusRetriever(uri=cfg["milvus"]["uri"], collection=cfg["milvus"]["collection"], embedder_name=cfg["models"]["embedder"], top_k=cfg["run"]["top_k"])
-    generator = VLLMGenerator(model=cfg["models"]["generator"], max_new_tokens=cfg["run"]["max_new_tokens"])
+    generator = VLLMGenerator(
+        model=cfg["models"]["generator"],
+        max_new_tokens=cfg["run"]["max_new_tokens"],
+        **cfg["vllm"],
+    )
     selector = ProfiledBatchSelector(tuple(cfg["scheduler"]["generation_batch_candidates"]), profiles, cfg["scheduler"]["static_batch_size"])
     result = PipelinedRAGRunner(retriever=retriever, generator=generator, retrieval_selector=selector, generation_selector=selector).run(requests)
     output = {"request_count": len(result.responses), "mean_latency_seconds": sum(item.latency_seconds for item in result.timings) / len(result.timings), "retrieval_batches": result.retrieval_batch_sizes, "generation_batches": result.generation_batch_sizes}
