@@ -35,6 +35,7 @@ def main() -> None:
         counts.append(int(client.get_collection_stats(collection_name=name)["row_count"]))
     client.close()
     source = MilvusClient(cfg["partition_source"]["uri"])
+    source.load_collection(collection_name=cfg["partition_source"]["collection"])
     expected = int(
         source.get_collection_stats(
             collection_name=cfg["partition_source"]["collection"]

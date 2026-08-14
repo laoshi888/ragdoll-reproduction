@@ -53,6 +53,9 @@ def main() -> None:
     )
     if row_count < 1:
         raise SystemExit("Source collection is empty.")
+    # Persisted Milvus Lite collections are commonly reopened in the released
+    # state.  Explicit loading is required before get/query/search operations.
+    source.load_collection(collection_name=source_cfg["collection"])
     first = source.get(
         collection_name=source_cfg["collection"], ids=[0], output_fields=["vector", "text"]
     )
