@@ -14,10 +14,9 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from ragdoll.backends.milvus import MilvusRetriever  # noqa: E402
-from ragdoll.backends.vllm import VLLMGenerator  # noqa: E402
+from ragdoll.backend_factory import build_generator  # noqa: E402
 from ragdoll.batching import ProfiledBatchSelector, ProfiledSerialBatchSelector  # noqa: E402
 from ragdoll.contracts import ProfileStore, RAGRequest  # noqa: E402
-from ragdoll.placement import load_placement_profiles, select_fastest_feasible  # noqa: E402
 from ragdoll.runtime import PipelinedRAGRunner, SerialRAGRunner  # noqa: E402
 from ragdoll.simulator import generate_poisson_workload  # noqa: E402
 
@@ -26,45 +25,6 @@ def _fixed_batch_selector(batch_size: int) -> Callable[[str, int], int]:
     if batch_size < 1:
         raise ValueError("static_batch_size must be positive")
     return lambda _stage, backlog: min(batch_size, backlog)
-
-
-def _build_generator(cfg: dict):
-    backend = cfg["run"].get("generator_backend", "vllm")
-    if backend == "vllm":
-        return VLLMGenerator(
-            model=cfg["models"]["generator"],
-            max_new_tokens=cfg["run"]["max_new_tokens"],
-            **cfg["vllm"],
-        )
-    if backend == "flexllmgen":
-        from ragdoll.backends.flexllmgen import FlexLLMGenerator
-
-        flex = cfg["flexllmgen"]
-        profile_path = Path(flex["placement_profile"])
-        if not profile_path.is_absolute():
-            profile_path = PROJECT_ROOT / profile_path
-        selected = select_fastest_feasible(
-            load_placement_profiles(profile_path),
-            flex["max_gpu_memory_gib"],
-        )
-        print(
-            f"selected placement={selected.name} percent={list(selected.percent)} "
-            f"profiled_peak_gpu_gib={selected.peak_gpu_memory_gib:.4f}"
-        )
-        return FlexLLMGenerator(
-            model=cfg["models"]["generator"],
-            max_new_tokens=cfg["run"]["max_new_tokens"],
-            prompt_length=flex["prompt_length"],
-            percent=selected.percent,
-            weights_path=flex["weights_path"],
-            offload_dir=flex["offload_dir"],
-            gpu_batch_size=flex["gpu_batch_size"],
-            num_gpu_batches=flex["num_gpu_batches"],
-            overlap=flex.get("overlap", True),
-            pin_weight=flex.get("pin_weight", True),
-            warmup=flex.get("warmup", True),
-        )
-    raise ValueError(f"unsupported generator backend: {backend}")
 
 
 def _summary(policy: str, result, elapsed_wall_seconds: float) -> dict[str, object]:
@@ -119,7 +79,7 @@ def main() -> None:
     requests = tuple(RAGRequest(item.request_id, questions[item.request_id], item.arrival_time) for item in arrivals)
     profiles = ProfileStore.load(Path(cfg["artifacts"]["profiles"]))
     retriever = MilvusRetriever(uri=cfg["milvus"]["uri"], collection=cfg["milvus"]["collection"], embedder_name=cfg["models"]["embedder"], top_k=cfg["run"]["top_k"])
-    generator = _build_generator(cfg)
+    generator = build_generator(cfg, PROJECT_ROOT)
     try:
         output: dict[str, object] = {"run": cfg["run"]["name"], "policies": {}}
         for policy in args.policies:

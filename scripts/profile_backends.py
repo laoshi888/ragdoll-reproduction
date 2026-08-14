@@ -13,7 +13,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from ragdoll.backends.milvus import MilvusRetriever  # noqa: E402
-from ragdoll.backends.vllm import VLLMGenerator  # noqa: E402
+from ragdoll.backend_factory import build_generator  # noqa: E402
 from ragdoll.contracts import ProfileSample, ProfileStore, RAGRequest  # noqa: E402
 
 
@@ -26,11 +26,7 @@ def main() -> None:
     cfg = yaml.safe_load(args.config.read_text(encoding="utf-8"))
     questions = [json.loads(line)["question"] for line in Path(cfg["artifacts"]["workload_questions"]).read_text(encoding="utf-8").splitlines()]
     retriever = MilvusRetriever(uri=cfg["milvus"]["uri"], collection=cfg["milvus"]["collection"], embedder_name=cfg["models"]["embedder"], top_k=cfg["run"]["top_k"])
-    generator = VLLMGenerator(
-        model=cfg["models"]["generator"],
-        max_new_tokens=cfg["run"]["max_new_tokens"],
-        **cfg["vllm"],
-    )
+    generator = build_generator(cfg, PROJECT_ROOT)
     store = ProfileStore()
     candidates = cfg["scheduler"]["generation_batch_candidates"]
     repeats = cfg["scheduler"]["profiling_samples_per_batch"]
