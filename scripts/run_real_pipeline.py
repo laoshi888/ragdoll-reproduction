@@ -90,6 +90,16 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("--config", type=Path, default=PROJECT_ROOT / "configs" / "real_small.yaml")
     parser.add_argument(
+        "--output",
+        type=Path,
+        help="Override the configured result path without changing the experiment config.",
+    )
+    parser.add_argument(
+        "--max-gpu-memory-gib",
+        type=float,
+        help="Override the FlexLLMGen placement budget for a paired comparison.",
+    )
+    parser.add_argument(
         "--policies",
         nargs="+",
         choices=("serial", "static", "adaptive"),
@@ -100,6 +110,10 @@ def main() -> None:
     import yaml
 
     cfg = yaml.safe_load(args.config.read_text(encoding="utf-8"))
+    if args.max_gpu_memory_gib is not None:
+        if cfg["run"].get("generator_backend", "vllm") != "flexllmgen":
+            raise ValueError("--max-gpu-memory-gib is only valid for the FlexLLMGen backend")
+        cfg["flexllmgen"]["max_gpu_memory_gib"] = args.max_gpu_memory_gib
     questions = [json.loads(line)["question"] for line in Path(cfg["artifacts"]["workload_questions"]).read_text(encoding="utf-8").splitlines()]
     arrivals = generate_poisson_workload(seed=cfg["run"]["seed"], requests_per_phase=cfg["run"]["requests_per_phase"], arrival_rates_per_minute=cfg["run"]["arrival_rates_per_minute"])
     requests = tuple(RAGRequest(item.request_id, questions[item.request_id], item.arrival_time) for item in arrivals)
@@ -149,7 +163,9 @@ def main() -> None:
             result = runner.run(requests)
             output["policies"][policy] = _summary(policy, result, time.monotonic() - started)
             print(f"completed policy={policy}")
-        path = Path(cfg["artifacts"]["result"]); path.parent.mkdir(parents=True, exist_ok=True); path.write_text(json.dumps(output, indent=2) + "\n", encoding="utf-8")
+        path = args.output or Path(cfg["artifacts"]["result"])
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(json.dumps(output, indent=2) + "\n", encoding="utf-8")
         print(json.dumps(output, indent=2))
     finally:
         generator.close()
