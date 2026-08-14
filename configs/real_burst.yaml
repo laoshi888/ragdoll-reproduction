@@ -1,0 +1,33 @@
+# High-load comparison of fixed batching and RAGDoll-style adaptive batching.
+# Reuses the corpus, Qwen checkpoint, and measured backend profiles from real_small.yaml.
+run:
+  name: qwen15b_triviaqa_burst
+  seed: 7
+  top_k: 3
+  max_new_tokens: 96
+  requests_per_phase: 16
+  arrival_rates_per_minute: [24, 48, 96, 144]
+
+models:
+  generator: Qwen/Qwen2.5-1.5B-Instruct
+  embedder: sentence-transformers/all-MiniLM-L6-v2
+
+vllm:
+  gpu_memory_utilization: 0.75
+  max_num_seqs: 16
+  max_model_len: 2048
+  enforce_eager: true
+
+milvus:
+  uri: /root/autodl-tmp/ragdoll/data/ragdoll_small.db
+  collection: ragdoll_small
+
+scheduler:
+  retrieval_batch_candidates: [1, 2, 4, 8, 16]
+  generation_batch_candidates: [1, 2, 4, 8, 16]
+  static_batch_size: 8
+
+artifacts:
+  workload_questions: /root/autodl-tmp/ragdoll/data/workload_questions.jsonl
+  profiles: /root/autodl-tmp/ragdoll/experiments/profile_small.json
+  result: /root/autodl-tmp/ragdoll/experiments/pipelined_burst_comparison.json
