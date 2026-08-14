@@ -19,6 +19,7 @@ from ragdoll.batching import ProfiledBatchSelector, ProfiledSerialBatchSelector 
 from ragdoll.contracts import ProfileStore, RAGRequest  # noqa: E402
 from ragdoll.runtime import PipelinedRAGRunner, SerialRAGRunner  # noqa: E402
 from ragdoll.simulator import generate_poisson_workload  # noqa: E402
+from ragdoll.topology import load_topology_profiles, select_fastest_topology  # noqa: E402
 
 
 def _fixed_batch_selector(batch_size: int) -> Callable[[str, int], int]:
@@ -62,7 +63,7 @@ def main() -> None:
     parser.add_argument(
         "--policies",
         nargs="+",
-        choices=("serial", "static", "adaptive"),
+        choices=("serial", "static", "adaptive", "profiled"),
         default=("adaptive",),
         help="Policies to run against the same deterministic arrival sequence.",
     )
@@ -83,7 +84,26 @@ def main() -> None:
     try:
         output: dict[str, object] = {"run": cfg["run"]["name"], "policies": {}}
         for policy in args.policies:
-            if policy == "serial":
+            executed_policy = policy
+            selected_topology = None
+            if policy == "profiled":
+                placement_name = getattr(generator, "placement_name", None)
+                if placement_name is None:
+                    raise ValueError("profiled topology requires a named memory placement")
+                topology_path = Path(cfg["scheduler"]["topology_profile"])
+                if not topology_path.is_absolute():
+                    topology_path = PROJECT_ROOT / topology_path
+                selected_topology = select_fastest_topology(
+                    load_topology_profiles(topology_path), placement_name
+                )
+                executed_policy = selected_topology.topology
+                print(
+                    f"profiled topology placement={placement_name} "
+                    f"selected={executed_policy} "
+                    f"profiled_mean_latency={selected_topology.mean_latency_seconds:.4f}"
+                )
+
+            if executed_policy == "serial":
                 selector = ProfiledSerialBatchSelector(
                     tuple(cfg["scheduler"]["generation_batch_candidates"]),
                     profiles,
@@ -94,7 +114,7 @@ def main() -> None:
                     generator=generator,
                     selector=selector,
                 )
-            elif policy == "static":
+            elif executed_policy == "static":
                 selector = _fixed_batch_selector(cfg["scheduler"]["static_batch_size"])
                 runner = PipelinedRAGRunner(
                     retriever=retriever,
@@ -121,8 +141,12 @@ def main() -> None:
                 )
             started = time.monotonic()
             result = runner.run(requests)
-            output["policies"][policy] = _summary(policy, result, time.monotonic() - started)
-            print(f"completed policy={policy}")
+            summary = _summary(policy, result, time.monotonic() - started)
+            summary["executed_policy"] = executed_policy
+            if selected_topology is not None:
+                summary["profiled_mean_latency_seconds"] = selected_topology.mean_latency_seconds
+            output["policies"][policy] = summary
+            print(f"completed policy={policy} executed_policy={executed_policy}")
         path = args.output or Path(cfg["artifacts"]["result"])
         path.parent.mkdir(parents=True, exist_ok=True)
         path.write_text(json.dumps(output, indent=2) + "\n", encoding="utf-8")

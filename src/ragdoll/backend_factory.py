@@ -33,7 +33,7 @@ def build_generator(cfg: dict, project_root: Path):
             f"selected placement={selected.name} percent={list(selected.percent)} "
             f"profiled_peak_gpu_gib={selected.peak_gpu_memory_gib:.4f}"
         )
-        return FlexLLMGenerator(
+        generator = FlexLLMGenerator(
             model=cfg["models"]["generator"],
             max_new_tokens=cfg["run"]["max_new_tokens"],
             prompt_length=flex["prompt_length"],
@@ -46,4 +46,6 @@ def build_generator(cfg: dict, project_root: Path):
             pin_weight=flex.get("pin_weight", True),
             warmup=flex.get("warmup", True),
         )
+        generator.placement_name = selected.name
+        return generator
     raise ValueError(f"unsupported generator backend: {backend}")

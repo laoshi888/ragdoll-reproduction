@@ -1,0 +1,40 @@
+{
+  "profiles": [
+    {
+      "placement": "weight_75_gpu_25_cpu",
+      "topology": "serial",
+      "mean_latency_seconds": 2.1523247306856015,
+      "p95_latency_seconds": 3.2778108386943736
+    },
+    {
+      "placement": "weight_75_gpu_25_cpu",
+      "topology": "static",
+      "mean_latency_seconds": 2.654867392188559,
+      "p95_latency_seconds": 3.875530774394671
+    },
+    {
+      "placement": "weight_75_gpu_25_cpu",
+      "topology": "adaptive",
+      "mean_latency_seconds": 3.111018954155346,
+      "p95_latency_seconds": 4.4455151073634624
+    },
+    {
+      "placement": "gpu_only",
+      "topology": "serial",
+      "mean_latency_seconds": 1.5948110506869853,
+      "p95_latency_seconds": 2.2570170064767203
+    },
+    {
+      "placement": "gpu_only",
+      "topology": "static",
+      "mean_latency_seconds": 1.8969737756221245,
+      "p95_latency_seconds": 2.4563049351175628
+    },
+    {
+      "placement": "gpu_only",
+      "topology": "adaptive",
+      "mean_latency_seconds": 0.9595440554743012,
+      "p95_latency_seconds": 1.111157172669967
+    }
+  ]
+}
