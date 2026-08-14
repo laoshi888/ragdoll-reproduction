@@ -56,4 +56,7 @@ class VLLMGenerator:
 
     def close(self) -> None:
         """Stop the vLLM engine before the script uses its hard process exit."""
-        self._llm.llm_engine.shutdown()
+        # In vLLM V1 the public LLM facade owns an LLMEngine, which in turn
+        # owns the multiprocessing EngineCore client.  The client, rather
+        # than LLMEngine itself, provides the shutdown operation.
+        self._llm.llm_engine.engine_core.shutdown()
