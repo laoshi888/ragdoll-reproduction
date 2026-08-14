@@ -18,6 +18,7 @@ logs/**
 !logs/.gitkeep
 experiments/**
 !experiments/.gitkeep
+!experiments/*.md
 
 # Local caches
 .cache/
