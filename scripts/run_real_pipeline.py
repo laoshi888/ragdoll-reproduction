@@ -15,9 +15,9 @@ sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
 from ragdoll.backends.milvus import MilvusRetriever  # noqa: E402
 from ragdoll.backends.vllm import VLLMGenerator  # noqa: E402
-from ragdoll.batching import ProfiledBatchSelector  # noqa: E402
+from ragdoll.batching import ProfiledBatchSelector, ProfiledSerialBatchSelector  # noqa: E402
 from ragdoll.contracts import ProfileStore, RAGRequest  # noqa: E402
-from ragdoll.runtime import PipelinedRAGRunner  # noqa: E402
+from ragdoll.runtime import PipelinedRAGRunner, SerialRAGRunner  # noqa: E402
 from ragdoll.simulator import generate_poisson_workload  # noqa: E402
 
 
@@ -29,11 +29,17 @@ def _fixed_batch_selector(batch_size: int) -> Callable[[str, int], int]:
 
 def _summary(policy: str, result, elapsed_wall_seconds: float) -> dict[str, object]:
     latencies = sorted(item.latency_seconds for item in result.timings)
+    waiting = [item.waiting_seconds for item in result.timings]
+    retrieval = [item.retrieval_seconds for item in result.timings]
+    generation = [item.generation_seconds for item in result.timings]
     return {
         "policy": policy,
         "request_count": len(result.responses),
         "mean_latency_seconds": sum(latencies) / len(latencies),
         "p95_latency_seconds": latencies[round(0.95 * (len(latencies) - 1))],
+        "mean_waiting_seconds": sum(waiting) / len(waiting),
+        "mean_retrieval_seconds": sum(retrieval) / len(retrieval),
+        "mean_generation_seconds": sum(generation) / len(generation),
         "wall_seconds": elapsed_wall_seconds,
         "retrieval_batches": result.retrieval_batch_sizes,
         "generation_batches": result.generation_batch_sizes,
@@ -46,7 +52,7 @@ def main() -> None:
     parser.add_argument(
         "--policies",
         nargs="+",
-        choices=("static", "adaptive"),
+        choices=("serial", "static", "adaptive"),
         default=("adaptive",),
         help="Policies to run against the same deterministic arrival sequence.",
     )
@@ -67,9 +73,25 @@ def main() -> None:
     try:
         output: dict[str, object] = {"run": cfg["run"]["name"], "policies": {}}
         for policy in args.policies:
-            if policy == "static":
+            if policy == "serial":
+                selector = ProfiledSerialBatchSelector(
+                    tuple(cfg["scheduler"]["generation_batch_candidates"]),
+                    profiles,
+                    cfg["scheduler"]["static_batch_size"],
+                )
+                runner = SerialRAGRunner(
+                    retriever=retriever,
+                    generator=generator,
+                    selector=selector,
+                )
+            elif policy == "static":
                 selector = _fixed_batch_selector(cfg["scheduler"]["static_batch_size"])
-                retrieval_selector = generation_selector = selector
+                runner = PipelinedRAGRunner(
+                    retriever=retriever,
+                    generator=generator,
+                    retrieval_selector=selector,
+                    generation_selector=selector,
+                )
             else:
                 retrieval_selector = ProfiledBatchSelector(
                     tuple(cfg["scheduler"]["retrieval_batch_candidates"]),
@@ -81,13 +103,14 @@ def main() -> None:
                     profiles,
                     cfg["scheduler"]["static_batch_size"],
                 )
+                runner = PipelinedRAGRunner(
+                    retriever=retriever,
+                    generator=generator,
+                    retrieval_selector=retrieval_selector,
+                    generation_selector=generation_selector,
+                )
             started = time.monotonic()
-            result = PipelinedRAGRunner(
-                retriever=retriever,
-                generator=generator,
-                retrieval_selector=retrieval_selector,
-                generation_selector=generation_selector,
-            ).run(requests)
+            result = runner.run(requests)
             output["policies"][policy] = _summary(policy, result, time.monotonic() - started)
             print(f"completed policy={policy}")
         path = Path(cfg["artifacts"]["result"]); path.parent.mkdir(parents=True, exist_ok=True); path.write_text(json.dumps(output, indent=2) + "\n", encoding="utf-8")

@@ -39,3 +39,31 @@ class ProfiledBatchSelector:
             timed,
             key=lambda item: (item[1] * (math.ceil(backlog / item[0]) + 1) / 2, item[0]),
         )[0]
+
+
+@dataclass(frozen=True)
+class ProfiledSerialBatchSelector:
+    """Choose one shared batch size using combined retrieval and generation cost."""
+
+    candidates: tuple[int, ...]
+    profiles: ProfileStore
+    fallback_batch_size: int = 1
+
+    def __call__(self, _stage: str, backlog: int) -> int:
+        if backlog < 1:
+            raise ValueError("backlog must be positive")
+        feasible = tuple(size for size in self.candidates if size <= backlog)
+        timed: list[tuple[int, float]] = []
+        for size in feasible:
+            try:
+                elapsed = self.profiles.mean_seconds("retrieval", size)
+                elapsed += self.profiles.mean_seconds("generation", size)
+                timed.append((size, elapsed))
+            except LookupError:
+                continue
+        if not timed:
+            return min(backlog, self.fallback_batch_size)
+        return min(
+            timed,
+            key=lambda item: (item[1] * (math.ceil(backlog / item[0]) + 1) / 2, item[0]),
+        )[0]

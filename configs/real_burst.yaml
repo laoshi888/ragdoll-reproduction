@@ -1,4 +1,4 @@
-# High-load comparison of fixed batching and RAGDoll-style adaptive batching.
+# Diagnostic high-load comparison of serial, fixed, and adaptive pipelines.
 # Reuses the corpus, Qwen checkpoint, and measured backend profiles from real_small.yaml.
 run:
   name: qwen15b_triviaqa_burst
