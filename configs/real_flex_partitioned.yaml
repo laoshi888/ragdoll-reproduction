@@ -1,0 +1,49 @@
+# FlexLLMGen burst workload with Milvus-Lite logical partition residency.
+run:
+  name: opt13b_triviaqa_flex_partitioned
+  generator_backend: flexllmgen
+  seed: 7
+  top_k: 3
+  max_new_tokens: 16
+  requests_per_phase: 8
+  arrival_rates_per_minute: [240]
+
+models:
+  generator: facebook/opt-1.3b
+  embedder: sentence-transformers/all-MiniLM-L6-v2
+
+flexllmgen:
+  placement_profile: configs/flexllmgen_opt13b_profile.json
+  max_gpu_memory_gib: 1.8
+  weights_path: /root/opt_weights
+  offload_dir: /root/autodl-tmp/ragdoll/data/flexllmgen_offload
+  prompt_length: 128
+  gpu_batch_size: 2
+  num_gpu_batches: 1
+  overlap: true
+  pin_weight: true
+  warmup: true
+
+partition_source:
+  uri: /root/autodl-tmp/ragdoll/data/ragdoll_small.db
+  collection: ragdoll_small
+
+milvus:
+  mode: logical_partitions
+  uri: /root/autodl-tmp/ragdoll/data/ragdoll_partitioned.db
+  collection_prefix: ragdoll_small
+  partition_count: 8
+  resident_partitions: 2
+
+scheduler:
+  topology_profile: configs/flex_topology_profile.json
+  retrieval_batch_candidates: [1, 2]
+  generation_batch_candidates: [1, 2]
+  static_batch_size: 2
+  profiling_samples_per_batch: 3
+  profiling_warmup_batches: 1
+
+artifacts:
+  workload_questions: /root/autodl-tmp/ragdoll/data/workload_questions.jsonl
+  profiles: /root/autodl-tmp/ragdoll/experiments/profile_flex_burst.json
+  result: /root/autodl-tmp/ragdoll/experiments/flex_partitioned_result.json

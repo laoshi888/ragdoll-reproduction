@@ -46,3 +46,6 @@ class MilvusRetriever:
             )
             for request, hits in zip(requests, results, strict=True)
         )
+
+    def close(self) -> None:
+        self._client.close()

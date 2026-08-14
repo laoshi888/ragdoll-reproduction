@@ -13,11 +13,11 @@ from typing import Callable
 PROJECT_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(PROJECT_ROOT / "src"))
 
-from ragdoll.backends.milvus import MilvusRetriever  # noqa: E402
 from ragdoll.backend_factory import build_generator  # noqa: E402
 from ragdoll.batching import ProfiledBatchSelector, ProfiledSerialBatchSelector  # noqa: E402
 from ragdoll.contracts import ProfileStore, RAGRequest  # noqa: E402
 from ragdoll.runtime import PipelinedRAGRunner, SerialRAGRunner  # noqa: E402
+from ragdoll.retriever_factory import build_retriever  # noqa: E402
 from ragdoll.simulator import generate_poisson_workload  # noqa: E402
 from ragdoll.topology import load_topology_profiles, select_fastest_topology  # noqa: E402
 
@@ -79,7 +79,7 @@ def main() -> None:
     arrivals = generate_poisson_workload(seed=cfg["run"]["seed"], requests_per_phase=cfg["run"]["requests_per_phase"], arrival_rates_per_minute=cfg["run"]["arrival_rates_per_minute"])
     requests = tuple(RAGRequest(item.request_id, questions[item.request_id], item.arrival_time) for item in arrivals)
     profiles = ProfileStore.load(Path(cfg["artifacts"]["profiles"]))
-    retriever = MilvusRetriever(uri=cfg["milvus"]["uri"], collection=cfg["milvus"]["collection"], embedder_name=cfg["models"]["embedder"], top_k=cfg["run"]["top_k"])
+    retriever = build_retriever(cfg)
     generator = build_generator(cfg, PROJECT_ROOT)
     try:
         output: dict[str, object] = {"run": cfg["run"]["name"], "policies": {}}
@@ -143,6 +143,14 @@ def main() -> None:
             result = runner.run(requests)
             summary = _summary(policy, result, time.monotonic() - started)
             summary["executed_policy"] = executed_policy
+            residency = getattr(retriever, "residency_snapshot", None)
+            if residency is not None:
+                summary["partition_residency"] = {
+                    "resident_partition_ids": list(residency.resident_partition_ids),
+                    "loads": residency.loads,
+                    "releases": residency.releases,
+                    "searches": residency.searches,
+                }
             if selected_topology is not None:
                 summary["profiled_mean_latency_seconds"] = selected_topology.mean_latency_seconds
             output["policies"][policy] = summary
@@ -153,6 +161,9 @@ def main() -> None:
         print(json.dumps(output, indent=2))
     finally:
         generator.close()
+        close_retriever = getattr(retriever, "close", None)
+        if close_retriever is not None:
+            close_retriever()
 
 
 if __name__ == "__main__":
