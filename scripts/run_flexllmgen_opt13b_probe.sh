@@ -9,7 +9,8 @@ FLEX_ENV="/root/autodl-tmp/.venvs/flexllmgen"
 OFFLOAD_DIR="$PROJECT_ROOT/data/flexllmgen_offload"
 HF_CACHE="$PROJECT_ROOT/models/hf"
 MIN_FREE_GIB=12
-FLEX_PERCENT="${FLEX_PERCENT:-50 50 100 0 100 0}"
+FLEX_PERCENT="${FLEX_PERCENT:-}"
+FLEX_MAX_GPU_MEMORY_GIB="${FLEX_MAX_GPU_MEMORY_GIB:-}"
 
 if [[ ! -x "$FLEX_ENV/bin/python" ]]; then
   echo "Missing FlexLLMGen environment: $FLEX_ENV" >&2
@@ -24,6 +25,15 @@ fi
 
 mkdir -p "$OFFLOAD_DIR" "$HF_CACHE"
 cd "$PROJECT_ROOT"
+
+if [[ -z "$FLEX_PERCENT" && -n "$FLEX_MAX_GPU_MEMORY_GIB" ]]; then
+  selection_json=$("$FLEX_ENV/bin/python" scripts/select_flexllmgen_placement.py \
+    --config configs/flexllmgen_opt13b_profile.json \
+    --max-gpu-memory-gib "$FLEX_MAX_GPU_MEMORY_GIB")
+  FLEX_PERCENT=$(printf '%s' "$selection_json" | "$FLEX_ENV/bin/python" -c \
+    'import json, sys; print(" ".join(map(str, json.load(sys.stdin)["percent"])))')
+fi
+FLEX_PERCENT="${FLEX_PERCENT:-50 50 100 0 100 0}"
 
 read -r -a percent_args <<< "$FLEX_PERCENT"
 if [[ ${#percent_args[@]} -ne 6 ]]; then

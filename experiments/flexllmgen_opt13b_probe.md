@@ -32,3 +32,8 @@ Relative to the GPU-only baseline, 75%/25% saves 33.7% of peak GPU memory and
 point improves throughput by 33.3% over 50%/50% for only 13.6% more peak GPU
 memory.  This is a component-level memory-placement measurement, not yet the
 paper's end-to-end RAGDoll result.
+
+The executable probe accepts `FLEX_MAX_GPU_MEMORY_GIB` and invokes the
+profiled selector when explicit `FLEX_PERCENT` is not supplied.  For example,
+`FLEX_MAX_GPU_MEMORY_GIB=1.8 bash scripts/run_flexllmgen_opt13b_probe.sh`
+selects the 75% GPU / 25% CPU profile above.
