@@ -3,6 +3,9 @@ set -euo pipefail
 
 cd /root/autodl-tmp/ragdoll
 export HF_HOME=/root/autodl-tmp/ragdoll/models/hf
+unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY || true
+export HF_ENDPOINT=https://hf-mirror.com
+export HF_HUB_DISABLE_XET=1
 
 if [[ ! -f data/ragdoll_partitioned.db.complete ]]; then
   if [[ -f data/ragdoll_partitioned.db ]]; then

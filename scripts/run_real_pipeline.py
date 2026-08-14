@@ -61,6 +61,11 @@ def main() -> None:
         help="Override the FlexLLMGen placement budget for a paired comparison.",
     )
     parser.add_argument(
+        "--resident-partitions",
+        type=int,
+        help="Override the number of Milvus-Lite logical partitions kept resident.",
+    )
+    parser.add_argument(
         "--policies",
         nargs="+",
         choices=("serial", "static", "adaptive", "profiled"),
@@ -75,6 +80,10 @@ def main() -> None:
         if cfg["run"].get("generator_backend", "vllm") != "flexllmgen":
             raise ValueError("--max-gpu-memory-gib is only valid for the FlexLLMGen backend")
         cfg["flexllmgen"]["max_gpu_memory_gib"] = args.max_gpu_memory_gib
+    if args.resident_partitions is not None:
+        if cfg["milvus"].get("mode") != "logical_partitions":
+            raise ValueError("--resident-partitions requires milvus.mode=logical_partitions")
+        cfg["milvus"]["resident_partitions"] = args.resident_partitions
     questions = [json.loads(line)["question"] for line in Path(cfg["artifacts"]["workload_questions"]).read_text(encoding="utf-8").splitlines()]
     arrivals = generate_poisson_workload(seed=cfg["run"]["seed"], requests_per_phase=cfg["run"]["requests_per_phase"], arrival_rates_per_minute=cfg["run"]["arrival_rates_per_minute"])
     requests = tuple(RAGRequest(item.request_id, questions[item.request_id], item.arrival_time) for item in arrivals)
