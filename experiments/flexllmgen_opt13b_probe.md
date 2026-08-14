@@ -18,6 +18,17 @@ the GPU batch size and number of GPU batches were both 1.
 | Decode throughput | 15.952 token/s |
 
 This confirms that FlexLLMGen's CPU/GPU weight placement works in the AutoDL
-environment.  It is a component-level measurement, not yet the paper's
-end-to-end RAGDoll result.  The next controlled run uses `FLEX_PERCENT="100 0
-100 0 100 0"` to establish the same-model GPU-only baseline.
+environment.  The following two same-model baselines were then run from the
+same cached weights and with the same prompt, generation, and batch settings.
+
+| Weight placement (GPU / CPU) | Peak GPU memory | CPU model memory | Total latency | Decode throughput |
+| --- | ---: | ---: | ---: | ---: |
+| 100% / 0% | 2.692 GB | 0.000 GB | 0.631 s | 50.682 token/s |
+| 75% / 25% | 1.786 GB | 0.938 GB | 1.503 s | 21.287 token/s |
+| 50% / 50% | 1.571 GB | 1.317 GB | 2.004 s | 15.970 token/s |
+
+Relative to the GPU-only baseline, 75%/25% saves 33.7% of peak GPU memory and
+50%/50% saves 41.6%, at the cost of lower generation throughput.  The 75%/25%
+point improves throughput by 33.3% over 50%/50% for only 13.6% more peak GPU
+memory.  This is a component-level memory-placement measurement, not yet the
+paper's end-to-end RAGDoll result.
