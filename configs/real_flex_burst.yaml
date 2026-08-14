@@ -33,6 +33,7 @@ scheduler:
   generation_batch_candidates: [1, 2]
   static_batch_size: 2
   profiling_samples_per_batch: 3
+  profiling_warmup_batches: 1
 
 artifacts:
   workload_questions: /root/autodl-tmp/ragdoll/data/workload_questions.jsonl

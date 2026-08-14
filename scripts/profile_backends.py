@@ -30,9 +30,12 @@ def main() -> None:
     store = ProfileStore()
     candidates = cfg["scheduler"]["generation_batch_candidates"]
     repeats = cfg["scheduler"]["profiling_samples_per_batch"]
+    warmup_batches = cfg["scheduler"].get("profiling_warmup_batches", 1)
     try:
         for size in candidates:
             batch = [RAGRequest(index, question, 0.0) for index, question in enumerate(questions[:size])]
+            for _ in range(warmup_batches):
+                generator.generate(retriever.retrieve(batch))
             for _ in range(repeats):
                 started = time.monotonic(); retrieved = retriever.retrieve(batch); store.add(ProfileSample("retrieval", size, time.monotonic() - started))
                 started = time.monotonic(); generator.generate(retrieved); store.add(ProfileSample("generation", size, time.monotonic() - started))

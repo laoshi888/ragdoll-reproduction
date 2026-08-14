@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# First real offloading-batch experiment: profile B=1,2 and then compare
-# serial, fixed-batch, and backlog-aware scheduling on one burst workload.
+# Real offloading-batch experiment: profile B=1,2, then compare serial,
+# fixed-batch, and backlog-aware scheduling in three counterbalanced rounds.
 PROJECT_ROOT="/root/autodl-tmp/ragdoll"
 FLEX_ENV="/root/autodl-tmp/.venvs/flexllmgen"
 cd "$PROJECT_ROOT"
@@ -15,6 +15,25 @@ unset http_proxy https_proxy HTTP_PROXY HTTPS_PROXY ALL_PROXY
 "$FLEX_ENV/bin/python" scripts/profile_backends.py \
   --config configs/real_flex_burst.yaml
 
-"$FLEX_ENV/bin/python" scripts/run_real_pipeline.py \
-  --config configs/real_flex_burst.yaml \
-  --policies serial static adaptive
+RESULT_DIR="$PROJECT_ROOT/experiments/flex_batching_runs"
+mkdir -p "$RESULT_DIR"
+
+orders=(
+  "serial static adaptive"
+  "static adaptive serial"
+  "adaptive serial static"
+)
+round=1
+for order in "${orders[@]}"; do
+  for policy in $order; do
+    "$FLEX_ENV/bin/python" scripts/run_real_pipeline.py \
+      --config configs/real_flex_burst.yaml \
+      --policies "$policy" \
+      --output "$RESULT_DIR/round${round}_${policy}.json"
+  done
+  round=$((round + 1))
+done
+
+"$FLEX_ENV/bin/python" scripts/summarize_policy_runs.py \
+  --input-dir "$RESULT_DIR" \
+  --output "$PROJECT_ROOT/experiments/flex_batching_summary.json"
