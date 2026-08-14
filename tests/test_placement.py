@@ -4,7 +4,11 @@ import unittest
 
 sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "src"))
 
-from ragdoll.placement import PlacementProfile, select_fastest_feasible  # noqa: E402
+from ragdoll.placement import (  # noqa: E402
+    PlacementProfile,
+    load_placement_profiles,
+    select_fastest_feasible,
+)
 
 
 class PlacementSelectionTests(unittest.TestCase):
@@ -22,6 +26,11 @@ class PlacementSelectionTests(unittest.TestCase):
     def test_rejects_budget_without_a_profile(self) -> None:
         with self.assertRaises(ValueError):
             select_fastest_feasible(self.profiles, 1.5)
+
+    def test_versioned_profile_selects_measured_75_percent_placement(self) -> None:
+        path = Path(__file__).resolve().parents[1] / "configs" / "flexllmgen_opt13b_profile.json"
+        selected = select_fastest_feasible(load_placement_profiles(path), 1.8)
+        self.assertEqual(selected.name, "weight_75_gpu_25_cpu")
 
 
 if __name__ == "__main__":

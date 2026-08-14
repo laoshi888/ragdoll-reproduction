@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import json
+from pathlib import Path
 
 
 @dataclass(frozen=True)
@@ -14,6 +16,29 @@ class PlacementProfile:
     peak_gpu_memory_gib: float
     total_latency_seconds: float
     decode_throughput_tokens_per_second: float
+
+
+def load_placement_profiles(path: Path) -> tuple[PlacementProfile, ...]:
+    """Load measured placements from the versioned JSON profile."""
+
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    profiles: list[PlacementProfile] = []
+    for item in raw["placements"]:
+        percent = tuple(item["percent"])
+        if len(percent) != 6:
+            raise ValueError(f"placement {item['name']!r} must contain six percentages")
+        profiles.append(
+            PlacementProfile(
+                name=item["name"],
+                percent=percent,
+                peak_gpu_memory_gib=item["peak_gpu_memory_gib"],
+                total_latency_seconds=item["total_latency_seconds"],
+                decode_throughput_tokens_per_second=item[
+                    "decode_throughput_tokens_per_second"
+                ],
+            )
+        )
+    return tuple(profiles)
 
 
 def select_fastest_feasible(
