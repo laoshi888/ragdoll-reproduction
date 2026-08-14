@@ -1,0 +1,30 @@
+{
+  "model": "facebook/opt-1.3b",
+  "prompt_length": 128,
+  "generation_length": 32,
+  "gpu_batch_size": 1,
+  "num_gpu_batches": 1,
+  "placements": [
+    {
+      "name": "gpu_only",
+      "percent": [100, 0, 100, 0, 100, 0],
+      "peak_gpu_memory_gib": 2.6921,
+      "total_latency_seconds": 0.631,
+      "decode_throughput_tokens_per_second": 50.682
+    },
+    {
+      "name": "weight_75_gpu_25_cpu",
+      "percent": [75, 25, 100, 0, 100, 0],
+      "peak_gpu_memory_gib": 1.7855,
+      "total_latency_seconds": 1.503,
+      "decode_throughput_tokens_per_second": 21.287
+    },
+    {
+      "name": "weight_50_gpu_50_cpu",
+      "percent": [50, 50, 100, 0, 100, 0],
+      "peak_gpu_memory_gib": 1.5712,
+      "total_latency_seconds": 2.004,
+      "decode_throughput_tokens_per_second": 15.970
+    }
+  ]
+}
