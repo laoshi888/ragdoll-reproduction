@@ -65,5 +65,7 @@ artifacts:
   model_cache: /root/autodl-tmp/ragdoll/models
   data_cache: /root/autodl-tmp/ragdoll/data
   workload_questions: /root/autodl-tmp/ragdoll/data/workload_pressure_questions.jsonl
-  profiles: /root/autodl-tmp/ragdoll/experiments/profile_flex_pressure.json
+  # Reuse the validated OPT-1.3B stage profile: this experiment changes only
+  # corpus scale and logical database residency, not generator placement.
+  profiles: /root/autodl-tmp/ragdoll/experiments/profile_flex_burst.json
   result: /root/autodl-tmp/ragdoll/experiments/flex_partition_pressure_result.json

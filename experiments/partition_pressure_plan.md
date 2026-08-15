@@ -25,6 +25,11 @@ small-corpus artifacts used by the completed result.  Candidate order rotates
 between repetitions and the profile records end-to-end latency, retrieval
 latency, and load/release counts for every run.
 
+The run reuses the validated `profile_flex_burst.json` generator-stage
+measurements.  Corpus scale and logical database residency are the only axes
+changed here, so creating a separate generator profile would add cloud
+variation without measuring the intended factor.
+
 ## Interpretation boundary
 
 Milvus Lite has no exposed memory quota and its logical collections are a
