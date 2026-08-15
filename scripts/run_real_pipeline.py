@@ -36,6 +36,19 @@ def _fixed_batch_selector(batch_size: int) -> Callable[[str, int], int]:
     return lambda _stage, backlog: min(batch_size, backlog)
 
 
+def _process_max_rss_gib() -> float | None:
+    """Return this process's peak RSS using the target Linux runtime."""
+    try:
+        import resource
+
+        peak = float(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss)
+    except (ImportError, OSError):
+        return None
+    # Linux reports KiB; macOS reports bytes.  AutoDL is Linux, but retaining
+    # the alternate conversion keeps local use unsurprising.
+    return peak / (1024**2 if sys.platform.startswith("linux") else 1024**3)
+
+
 def _summary(policy: str, result, elapsed_wall_seconds: float) -> dict[str, object]:
     latencies = sorted(item.latency_seconds for item in result.timings)
     waiting = [item.waiting_seconds for item in result.timings]
@@ -52,6 +65,7 @@ def _summary(policy: str, result, elapsed_wall_seconds: float) -> dict[str, obje
         "wall_seconds": elapsed_wall_seconds,
         "retrieval_batches": result.retrieval_batch_sizes,
         "generation_batches": result.generation_batch_sizes,
+        "process_max_rss_gib": _process_max_rss_gib(),
     }
 
 
@@ -71,7 +85,7 @@ def main() -> None:
     parser.add_argument(
         "--resident-partitions",
         type=int,
-        help="Override the number of Milvus-Lite logical partitions kept resident.",
+        help="Override the number of logical or native Milvus partitions kept resident.",
     )
     parser.add_argument(
         "--joint-max-gpu-memory-gib",
@@ -113,8 +127,10 @@ def main() -> None:
             raise ValueError("--max-gpu-memory-gib is only valid for the FlexLLMGen backend")
         cfg["flexllmgen"]["max_gpu_memory_gib"] = args.max_gpu_memory_gib
     if args.resident_partitions is not None:
-        if cfg["milvus"].get("mode") != "logical_partitions":
-            raise ValueError("--resident-partitions requires milvus.mode=logical_partitions")
+        if cfg["milvus"].get("mode") not in {"logical_partitions", "native_partitions"}:
+            raise ValueError(
+                "--resident-partitions requires a logical or native partition mode"
+            )
         cfg["milvus"]["resident_partitions"] = args.resident_partitions
     elif selected_joint is None and cfg["milvus"].get("residency_profile"):
         residency_path = Path(cfg["milvus"]["residency_profile"])

@@ -5,7 +5,12 @@ flexllmgen:
   role: offloading-based single-GPU LLM inference
 milvus:
   repository: https://github.com/milvus-io/milvus
+  version: v2.5.11
+  deployment: configs/milvus-native-standalone-compose.yaml
   role: vector database for retrieval
+pymilvus:
+  version_range: ">=2.5,<3"
+  role: native partition control and vector retrieval client
 vllm:
   repository: https://github.com/vllm-project/vllm
   role: serial RAG serving baseline

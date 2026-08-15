@@ -17,7 +17,13 @@ This repository is a reproduction workspace for *RAGDoll: Efficient Offloading-b
 
 ## Status
 
-The base Python, PyTorch, CUDA, Transformers, Accelerate, Sentence Transformers, and Datasets environment has been validated on AutoDL. The next step is to identify the paper's public code and its smallest reproducible experiment.
+The small-scale reproduction now covers FlexLLMGen GPU/CPU placement, profiled
+batch and topology selection, Milvus-Lite logical partition residency, and
+joint end-to-end configuration selection.  A 16,000-vector pressure profile
+confirmed measurable lazy load/release overhead.  The active final stage adds
+Milvus Standalone native partitions under a real Docker cgroup memory limit;
+see `experiments/native_partition_memory_design.md` and
+`scripts/run_autodl_native_partition_profile.sh`.
 
 ## External Components
 
@@ -28,4 +34,4 @@ This reproduction reuses established open-source components where possible:
 - vLLM baseline serving engine: https://github.com/vllm-project/vllm
 - Hugging Face Transformers and Accelerate for model interfaces and device placement.
 
-The exact commits and package versions will be recorded in `configs/sources.yaml` after the first runnable baseline is selected.
+Pinned external versions and roles are recorded in `configs/sources.yaml`.

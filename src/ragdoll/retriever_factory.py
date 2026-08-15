@@ -26,4 +26,17 @@ def build_retriever(cfg: dict):
             resident_partitions=milvus["resident_partitions"],
             **common,
         )
+    if mode == "native_partitions":
+        from .backends.native_partitioned_milvus import NativePartitionedMilvusRetriever
+
+        return NativePartitionedMilvusRetriever(
+            uri=milvus["uri"],
+            token=milvus.get("token"),
+            collection=milvus["collection"],
+            partition_prefix=milvus["partition_prefix"],
+            partition_count=milvus["partition_count"],
+            resident_partitions=milvus["resident_partitions"],
+            search_params=milvus.get("search_params"),
+            **common,
+        )
     raise ValueError(f"unsupported Milvus mode: {mode}")
