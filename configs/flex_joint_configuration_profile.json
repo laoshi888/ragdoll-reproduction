@@ -1,0 +1,28 @@
+{
+  "run": "opt13b_triviaqa_flex_partitioned",
+  "date": "2026-08-15",
+  "profile_repetitions": 3,
+  "selection_metric": "median_latency_seconds",
+  "summary": [
+    {
+      "name": "offload_75_25",
+      "runs": 3,
+      "max_gpu_memory_gib": 1.8,
+      "placement": "weight_75_gpu_25_cpu",
+      "resident_partitions": 8,
+      "topology": "serial",
+      "mean_latency_seconds": 2.6327425418421626,
+      "median_latency_seconds": 2.2316277432255447
+    },
+    {
+      "name": "gpu_only",
+      "runs": 3,
+      "max_gpu_memory_gib": 3.0,
+      "placement": "gpu_only",
+      "resident_partitions": 8,
+      "topology": "adaptive",
+      "mean_latency_seconds": 2.14471699607869,
+      "median_latency_seconds": 1.3077108308207244
+    }
+  ]
+}

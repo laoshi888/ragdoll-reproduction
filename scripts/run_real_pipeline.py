@@ -18,6 +18,10 @@ from ragdoll.batching import ProfiledBatchSelector, ProfiledSerialBatchSelector 
 from ragdoll.contracts import ProfileStore, RAGRequest  # noqa: E402
 from ragdoll.runtime import PipelinedRAGRunner, SerialRAGRunner  # noqa: E402
 from ragdoll.retriever_factory import build_retriever  # noqa: E402
+from ragdoll.joint_profile import (  # noqa: E402
+    load_joint_configuration_profiles,
+    select_fastest_joint_configuration,
+)
 from ragdoll.partition_profile import (  # noqa: E402
     load_partition_residency_profiles,
     select_fastest_residency,
@@ -70,9 +74,14 @@ def main() -> None:
         help="Override the number of Milvus-Lite logical partitions kept resident.",
     )
     parser.add_argument(
+        "--joint-max-gpu-memory-gib",
+        type=float,
+        help="Select one fully measured placement/residency/topology configuration.",
+    )
+    parser.add_argument(
         "--policies",
         nargs="+",
-        choices=("serial", "static", "adaptive", "profiled"),
+        choices=("serial", "static", "adaptive", "profiled", "joint"),
         default=("adaptive",),
         help="Policies to run against the same deterministic arrival sequence.",
     )
@@ -80,6 +89,25 @@ def main() -> None:
     import yaml
 
     cfg = yaml.safe_load(args.config.read_text(encoding="utf-8"))
+    if args.joint_max_gpu_memory_gib is not None and args.max_gpu_memory_gib is not None:
+        raise ValueError("use either --joint-max-gpu-memory-gib or --max-gpu-memory-gib")
+    selected_joint = None
+    if args.joint_max_gpu_memory_gib is not None:
+        joint_path = Path(cfg["scheduler"]["joint_profile"])
+        if not joint_path.is_absolute():
+            joint_path = PROJECT_ROOT / joint_path
+        selected_joint = select_fastest_joint_configuration(
+            load_joint_configuration_profiles(joint_path), args.joint_max_gpu_memory_gib
+        )
+        cfg["flexllmgen"]["max_gpu_memory_gib"] = selected_joint.max_gpu_memory_gib
+        cfg["milvus"]["resident_partitions"] = selected_joint.resident_partitions
+        print(
+            f"selected joint_config={selected_joint.name} "
+            f"placement={selected_joint.placement} "
+            f"resident_partitions={selected_joint.resident_partitions} "
+            f"topology={selected_joint.topology} "
+            f"profiled_median_latency={selected_joint.median_latency_seconds:.4f}"
+        )
     if args.max_gpu_memory_gib is not None:
         if cfg["run"].get("generator_backend", "vllm") != "flexllmgen":
             raise ValueError("--max-gpu-memory-gib is only valid for the FlexLLMGen backend")
@@ -88,7 +116,7 @@ def main() -> None:
         if cfg["milvus"].get("mode") != "logical_partitions":
             raise ValueError("--resident-partitions requires milvus.mode=logical_partitions")
         cfg["milvus"]["resident_partitions"] = args.resident_partitions
-    elif cfg["milvus"].get("residency_profile"):
+    elif selected_joint is None and cfg["milvus"].get("residency_profile"):
         residency_path = Path(cfg["milvus"]["residency_profile"])
         if not residency_path.is_absolute():
             residency_path = PROJECT_ROOT / residency_path
@@ -113,7 +141,17 @@ def main() -> None:
         for policy in args.policies:
             executed_policy = policy
             selected_topology = None
-            if policy == "profiled":
+            if policy == "joint":
+                if selected_joint is None:
+                    raise ValueError("joint policy requires --joint-max-gpu-memory-gib")
+                placement_name = getattr(generator, "placement_name", None)
+                if placement_name != selected_joint.placement:
+                    raise ValueError(
+                        f"joint profile expected placement {selected_joint.placement!r}, "
+                        f"but generator selected {placement_name!r}"
+                    )
+                executed_policy = selected_joint.topology
+            elif policy == "profiled":
                 placement_name = getattr(generator, "placement_name", None)
                 if placement_name is None:
                     raise ValueError("profiled topology requires a named memory placement")
@@ -184,6 +222,12 @@ def main() -> None:
                 summary["resident_partitions"] = len(residency.resident_partition_ids)
             if selected_topology is not None:
                 summary["profiled_mean_latency_seconds"] = selected_topology.mean_latency_seconds
+            if selected_joint is not None:
+                summary["joint_configuration"] = {
+                    "name": selected_joint.name,
+                    "profiled_median_latency_seconds": selected_joint.median_latency_seconds,
+                    "profiled_mean_latency_seconds": selected_joint.mean_latency_seconds,
+                }
             output["policies"][policy] = summary
             print(f"completed policy={policy} executed_policy={executed_policy}")
         path = args.output or Path(cfg["artifacts"]["result"])

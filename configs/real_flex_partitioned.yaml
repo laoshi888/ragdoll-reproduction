@@ -38,6 +38,7 @@ milvus:
 
 scheduler:
   topology_profile: configs/flex_topology_profile.json
+  joint_profile: configs/flex_joint_configuration_profile.json
   retrieval_batch_candidates: [1, 2]
   generation_batch_candidates: [1, 2]
   static_batch_size: 2
