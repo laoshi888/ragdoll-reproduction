@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import json
 from pathlib import Path
+from statistics import median
 import subprocess
 import sys
 
@@ -21,6 +22,11 @@ def main() -> None:
     )
     parser.add_argument(
         "--output", type=Path, default=PROJECT_ROOT / "experiments" / "flex_joint_profile.json"
+    )
+    parser.add_argument(
+        "--resume",
+        action="store_true",
+        help="reuse existing isolated run files and execute only missing repetitions",
     )
     args = parser.parse_args()
 
@@ -57,8 +63,11 @@ def main() -> None:
                 "--output",
                 str(raw_path),
             ]
-            print(f"profiling joint_candidate={name} repeat={repeat + 1}/{repeats}")
-            subprocess.run(command, check=True)
+            if args.resume and raw_path.exists():
+                print(f"reusing joint_candidate={name} repeat={repeat + 1}/{repeats}")
+            else:
+                print(f"profiling joint_candidate={name} repeat={repeat + 1}/{repeats}")
+                subprocess.run(command, check=True)
             payload = json.loads(raw_path.read_text(encoding="utf-8"))
             metrics = payload["policies"]["profiled"]
             rows.append(
@@ -92,10 +101,15 @@ def main() -> None:
                 "resident_partitions": first["resident_partitions"],
                 "topology": first["topology"],
                 "mean_latency_seconds": sum(float(row["mean_latency_seconds"]) for row in matching) / len(matching),
+                "median_latency_seconds": median(float(row["mean_latency_seconds"]) for row in matching),
                 "mean_waiting_seconds": sum(float(row["mean_waiting_seconds"]) for row in matching) / len(matching),
+                "median_waiting_seconds": median(float(row["mean_waiting_seconds"]) for row in matching),
                 "mean_retrieval_seconds": sum(float(row["mean_retrieval_seconds"]) for row in matching) / len(matching),
+                "median_retrieval_seconds": median(float(row["mean_retrieval_seconds"]) for row in matching),
                 "mean_generation_seconds": sum(float(row["mean_generation_seconds"]) for row in matching) / len(matching),
+                "median_generation_seconds": median(float(row["mean_generation_seconds"]) for row in matching),
                 "mean_wall_seconds": sum(float(row["wall_seconds"]) for row in matching) / len(matching),
+                "median_wall_seconds": median(float(row["wall_seconds"]) for row in matching),
             }
         )
     output = {"runs": rows, "summary": summary}

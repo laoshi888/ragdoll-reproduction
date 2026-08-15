@@ -2,8 +2,9 @@
 
 The next active-profile step measures complete configurations rather than
 selecting generation placement, database residency, and execution topology in
-isolation.  It uses the same eight-request partitioned TriviaQA burst and two
-counterbalanced repetitions per candidate.
+isolation.  It uses the same eight-request partitioned TriviaQA burst and three
+counterbalanced repetitions per candidate.  Existing isolated run files are
+reused, so interrupted or extended profiles execute only missing repetitions.
 
 | Candidate | GPU budget | Expected measured placement | Resident DB partitions | Profiled topology |
 | --- | ---: | --- | ---: | --- |

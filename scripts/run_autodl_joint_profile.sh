@@ -11,4 +11,5 @@ python scripts/verify_partitioned_corpus.py --config configs/real_flex_partition
 python scripts/profile_joint_configuration.py \
   --config configs/real_flex_partitioned.yaml \
   --plan configs/flex_joint_profile_plan.json \
-  --output experiments/flex_joint_profile.json
+  --output experiments/flex_joint_profile.json \
+  --resume
