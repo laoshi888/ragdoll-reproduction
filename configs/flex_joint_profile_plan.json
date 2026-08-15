@@ -1,0 +1,13 @@
+{
+  "repeats": 2,
+  "candidates": [
+    {
+      "name": "offload_75_25",
+      "max_gpu_memory_gib": 1.8
+    },
+    {
+      "name": "gpu_only",
+      "max_gpu_memory_gib": 3.0
+    }
+  ]
+}

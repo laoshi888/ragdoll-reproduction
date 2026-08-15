@@ -170,6 +170,9 @@ def main() -> None:
             result = runner.run(requests)
             summary = _summary(policy, result, time.monotonic() - started)
             summary["executed_policy"] = executed_policy
+            placement_name = getattr(generator, "placement_name", None)
+            if placement_name is not None:
+                summary["placement"] = placement_name
             residency = getattr(retriever, "residency_snapshot", None)
             if residency is not None:
                 summary["partition_residency"] = {
