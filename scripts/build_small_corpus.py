@@ -28,8 +28,12 @@ def main() -> None:
         raise SystemExit("Install requirements-autodl.txt in AutoDL before building the corpus.") from error
     config = yaml.safe_load(args.config.read_text(encoding="utf-8"))
     corpus, run, artifacts = config["corpus"], config["run"], config["artifacts"]
-    client = MilvusClient(config["milvus"]["uri"])
-    collection = config["milvus"]["collection"]
+    # Partition-pressure configurations use ``milvus`` for their logical
+    # partition target and provide a separate corpus source destination.
+    # Existing single-collection configurations retain the original layout.
+    target_milvus = config.get("corpus_milvus", config["milvus"])
+    client = MilvusClient(target_milvus["uri"])
+    collection = target_milvus["collection"]
     if client.has_collection(collection):
         if not args.reset:
             raise SystemExit(f"Collection {collection!r} already exists; rerun with --reset to replace it.")

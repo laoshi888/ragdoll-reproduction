@@ -30,6 +30,23 @@ configuration selection.  The earlier three-run profile also contained one
 similar slow run (3.829 s).
 
 Consequently, this small-scale reproduction reports medians and preserves raw
-per-run JSON files on AutoDL.  A final performance comparison should alternate
-both configurations for multiple repetitions on the same instance, rather
-than infer a conclusion from one cloud run.
+per-run JSON files on AutoDL, rather than infer a conclusion from one cloud
+run.
+
+## Counterbalanced final comparison
+
+Three additional repetitions alternated the two bundles on the same instance:
+offload, GPU-only, offload, GPU-only, and so on.  Raw outputs are stored under
+`logs/joint_validation/` on AutoDL and are intentionally not committed.
+
+| Bundle | Per-run mean latency | Mean of runs | Median of runs |
+| --- | --- | ---: | ---: |
+| 75% GPU / 25% CPU, serial | 2.243, 2.210, 2.222 s | 2.225 s | 2.222 s |
+| GPU-only, adaptive | 1.255, 3.877, 1.243 s | 2.125 s | **1.255 s** |
+
+The constrained offload bundle is stable and remains the only measured choice
+below 1.8 GiB.  At 3.0 GiB, GPU-only/adaptive has a 1.77x lower median
+end-to-end latency than the offloaded bundle (1.255 s versus 2.222 s), while
+still exhibiting one I/O/CPU-contention outlier.  This supports the paper's
+profile-and-select principle: placement, partition residency, and execution
+topology must be selected together under the actual memory budget.

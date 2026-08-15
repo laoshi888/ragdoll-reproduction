@@ -1,0 +1,69 @@
+# Controlled logical-partition pressure experiment.  Run only on AutoDL.
+# Milvus Lite collections model the paper's residency control, but do not
+# impose a native RAM quota; report transfer/search overhead, not disk paging.
+run:
+  name: opt13b_triviaqa_partition_pressure
+  generator_backend: flexllmgen
+  seed: 7
+  top_k: 3
+  max_new_tokens: 16
+  requests_per_phase: 16
+  arrival_rates_per_minute: [240]
+
+models:
+  generator: facebook/opt-1.3b
+  embedder: sentence-transformers/all-MiniLM-L6-v2
+
+corpus:
+  dataset: mandarjoshi/trivia_qa
+  dataset_config: rc
+  split: train
+  streaming: true
+  max_chunks: 16000
+  chunk_size_characters: 600
+  chunk_overlap_characters: 80
+
+flexllmgen:
+  placement_profile: configs/flexllmgen_opt13b_profile.json
+  max_gpu_memory_gib: 1.8
+  weights_path: /root/opt_weights
+  offload_dir: /root/autodl-tmp/ragdoll/data/flexllmgen_offload
+  prompt_length: 128
+  gpu_batch_size: 2
+  num_gpu_batches: 1
+  overlap: true
+  pin_weight: true
+  warmup: true
+
+partition_source:
+  uri: /root/autodl-tmp/ragdoll/data/ragdoll_pressure_source.db
+  collection: ragdoll_pressure_source
+
+# Destination used only while constructing the unpartitioned source corpus.
+corpus_milvus:
+  uri: /root/autodl-tmp/ragdoll/data/ragdoll_pressure_source.db
+  collection: ragdoll_pressure_source
+
+milvus:
+  mode: logical_partitions
+  uri: /root/autodl-tmp/ragdoll/data/ragdoll_pressure_partitioned.db
+  collection_prefix: ragdoll_pressure
+  partition_count: 32
+  resident_partitions: 4
+  residency_profile: configs/flex_partition_pressure_profile.json
+
+scheduler:
+  retrieval_batch_candidates: [1, 2]
+  generation_batch_candidates: [1, 2]
+  static_batch_size: 2
+  profiling_samples_per_batch: 3
+  profiling_warmup_batches: 1
+  partition_residency_candidates: [2, 4, 8, 32]
+  partition_residency_profile_repeats: 3
+
+artifacts:
+  model_cache: /root/autodl-tmp/ragdoll/models
+  data_cache: /root/autodl-tmp/ragdoll/data
+  workload_questions: /root/autodl-tmp/ragdoll/data/workload_pressure_questions.jsonl
+  profiles: /root/autodl-tmp/ragdoll/experiments/profile_flex_pressure.json
+  result: /root/autodl-tmp/ragdoll/experiments/flex_partition_pressure_result.json
