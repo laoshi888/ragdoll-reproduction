@@ -18,6 +18,10 @@ from ragdoll.batching import ProfiledBatchSelector, ProfiledSerialBatchSelector 
 from ragdoll.contracts import ProfileStore, RAGRequest  # noqa: E402
 from ragdoll.runtime import PipelinedRAGRunner, SerialRAGRunner  # noqa: E402
 from ragdoll.retriever_factory import build_retriever  # noqa: E402
+from ragdoll.partition_profile import (  # noqa: E402
+    load_partition_residency_profiles,
+    select_fastest_residency,
+)
 from ragdoll.simulator import generate_poisson_workload  # noqa: E402
 from ragdoll.topology import load_topology_profiles, select_fastest_topology  # noqa: E402
 
@@ -84,6 +88,20 @@ def main() -> None:
         if cfg["milvus"].get("mode") != "logical_partitions":
             raise ValueError("--resident-partitions requires milvus.mode=logical_partitions")
         cfg["milvus"]["resident_partitions"] = args.resident_partitions
+    elif cfg["milvus"].get("residency_profile"):
+        residency_path = Path(cfg["milvus"]["residency_profile"])
+        if not residency_path.is_absolute():
+            residency_path = PROJECT_ROOT / residency_path
+        selected_residency = select_fastest_residency(
+            load_partition_residency_profiles(residency_path),
+            int(cfg["milvus"]["partition_count"]),
+        )
+        cfg["milvus"]["resident_partitions"] = selected_residency.resident_partitions
+        print(
+            "selected resident_partitions="
+            f"{selected_residency.resident_partitions} "
+            f"profiled_mean_latency={selected_residency.mean_latency_seconds:.4f}"
+        )
     questions = [json.loads(line)["question"] for line in Path(cfg["artifacts"]["workload_questions"]).read_text(encoding="utf-8").splitlines()]
     arrivals = generate_poisson_workload(seed=cfg["run"]["seed"], requests_per_phase=cfg["run"]["requests_per_phase"], arrival_rates_per_minute=cfg["run"]["arrival_rates_per_minute"])
     requests = tuple(RAGRequest(item.request_id, questions[item.request_id], item.arrival_time) for item in arrivals)
@@ -160,6 +178,7 @@ def main() -> None:
                     "releases": residency.releases,
                     "searches": residency.searches,
                 }
+                summary["resident_partitions"] = len(residency.resident_partition_ids)
             if selected_topology is not None:
                 summary["profiled_mean_latency_seconds"] = selected_topology.mean_latency_seconds
             output["policies"][policy] = summary

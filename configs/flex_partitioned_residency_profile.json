@@ -1,0 +1,35 @@
+{
+  "run": "opt13b_triviaqa_flex_partitioned",
+  "date": "2026-08-15",
+  "profile_repetitions": 2,
+  "summary": [
+    {
+      "resident_partitions": 1,
+      "mean_latency_seconds": 2.98326811962761,
+      "mean_retrieval_seconds": 0.31334903684910387,
+      "mean_loads": 39.0,
+      "mean_releases": 39.0
+    },
+    {
+      "resident_partitions": 2,
+      "mean_latency_seconds": 2.2631226112134755,
+      "mean_retrieval_seconds": 0.1209224525373429,
+      "mean_loads": 36.0,
+      "mean_releases": 36.0
+    },
+    {
+      "resident_partitions": 4,
+      "mean_latency_seconds": 3.326180257718079,
+      "mean_retrieval_seconds": 0.32743350486271083,
+      "mean_loads": 29.0,
+      "mean_releases": 29.0
+    },
+    {
+      "resident_partitions": 8,
+      "mean_latency_seconds": 2.166958148474805,
+      "mean_retrieval_seconds": 0.08804816333577037,
+      "mean_loads": 0.0,
+      "mean_releases": 0.0
+    }
+  ]
+}
