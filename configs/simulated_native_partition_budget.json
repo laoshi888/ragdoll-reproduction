@@ -1,0 +1,14 @@
+{
+  "simulation_label": "Analytical simulation; not a native Milvus measurement",
+  "source_experiment": "experiments/partition_pressure_profile.md",
+  "host_memory_budget_gib": 4.45,
+  "llm_process_reserve_gib": 4.0,
+  "resident_partition_footprint_gib": 0.05,
+  "candidate_resident_partitions": [2, 4, 8, 32],
+  "observed_end_to_end_latency_seconds": {
+    "2": 5.337,
+    "4": 5.056,
+    "8": 5.019,
+    "32": 3.957
+  }
+}
